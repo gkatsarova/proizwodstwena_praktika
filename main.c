@@ -29,7 +29,7 @@ int check_winner_by_4cards(int count[NUM_PLAYERS][13], struct Card players[NUM_P
     for (int i = 0; i < NUM_PLAYERS; i++) {
         for (int j = 0; j < 13; j++) {
             if (count[i][j] == 4) {
-                int card_value_winner = j + 1;
+                int card_value_winner = j;
 
                 if (winner != -1) {
                     int current_value = card_value(players[winner][0].value);
