@@ -8,102 +8,143 @@ struct Card {
     char color;
 };
 
-int find_winner_by_4_cards(struct Card players[NUM_PLAYERS][PLAYERS_ARRAY_SIZE]) {
-    int count[NUM_PLAYERS][PLAYERS_ARRAY_SIZE] = {0};
-
-    for (int i = 0; i < NUM_PLAYERS; i++) {
-        for (int j = 0; j < PLAYERS_ARRAY_SIZE; j++) {
-            int value = players[i][j].value;
-            count[i][value]++;
-            if (count[i][value] == 4) return i + 1;
-        }
-    }
-
-    return -1;
+int card_value(char value) {
+    if (value >= '1' && value <= '9') return value - '0';
+    if (value == 'J') return 10;
+    if (value == 'Q') return 12;
+    if (value == 'K') return 15;
+    if (value == 'A') return 20;
 }
 
-int find_winner_by_value(struct Card players[NUM_PLAYERS][PLAYERS_ARRAY_SIZE]){
-    int result[NUM_PLAYERS] = {0};
+int color_value(char color) {
+    if(color == 'C') return 1;
+    else if(color == 'D') return 2;
+    else if(color == 'H') return 3;
+    else return 4;
+ }
+
+int check_winner_by_4cards(int count[NUM_PLAYERS][13], struct Card players[NUM_PLAYERS][PLAYERS_ARRAY_SIZE]) {
+    int winner = -1;
+
     for (int i = 0; i < NUM_PLAYERS; i++) {
-        for (int j = 0; j < PLAYERS_ARRAY_SIZE; j++) {
-            result[i] = result[i] + players[i][j].value;
+        for (int j = 0; j < 13; j++) {
+            if (count[i][j] == 4) {
+                int card_value_winner = j + 1;
+
+                if (winner != -1) {
+                    int current_value = card_value(players[winner][0].value);
+                    if (card_value_winner > current_value) {
+                        winner = i;
+                    }
+                } else {
+                    winner = i;
+                }
+
+                break;
+            }
         }
     }
 
-    int max = result[0];
-    int winner;
-    for (int i = 0; i < NUM_PLAYERS; i++) {
-        if (result[i] > max) {
-            max = result[i];
-            winner = i + 1;
-        }
-    }
     return winner;
 }
-
-int game(char* fileName, struct Card players[NUM_PLAYERS][PLAYERS_ARRAY_SIZE]) {
+int game(char* fileName, struct Card players[NUM_PLAYERS][PLAYERS_ARRAY_SIZE], int player_card_count[NUM_PLAYERS]) {
     FILE* file = fopen(fileName, "r");
     if (file == NULL) {
-        printf("Error opening file");
-        exit(-1);
+        printf("Error opening file\n");
+        exit(1);
     }
 
-    char value;
-    char color;
+    int count[NUM_PLAYERS][13] = {0};
+    int winner_by_4_cards = -1;
+    char value, color;
     int cards = 0;
-    while (fscanf(file, " %c %c", &value, &color) == 2) {
+    while(fscanf(file, "%c %c ", &value, &color) == 2){
         int player_index = cards % NUM_PLAYERS;
-        int card_index = cards / NUM_PLAYERS;
-
-        if (value == 'J') value = 10;
-        else if (value == 'Q') value = 12;
-        else if (value == 'K') value = 15;
-        else if (value == 'A') value = 20;
-        else value -= '0';
-
+        int card_index = player_card_count[player_index];
+        
         players[player_index][card_index].value = value;
         players[player_index][card_index].color = color;
+        player_card_count[player_index]++;
 
-        //printf("player[%d] value %d color %c\n", player_index + 1, value, color);
+        int value_index = card_value(value);
+        count[player_index][value_index]++;
         cards++;
+
+        if(cards % NUM_PLAYERS == 0){ 
+            winner_by_4_cards = check_winner_by_4cards(count, players);
+            if (winner_by_4_cards != -1) {
+                fclose(file);
+                return winner_by_4_cards;
+            }
+        }
     }
 
     fclose(file);
 
-    int winner = find_winner_by_4_cards(players);
-    if(winner == -1) winner = find_winner_by_value(players);
+    int result[NUM_PLAYERS] = {0};
+    int color_scores[NUM_PLAYERS] = {0};
+    for (int i = 0; i < NUM_PLAYERS; i++) {
+        for (int j = 0; j < player_card_count[i]; j++) {
+            result[i] += card_value(players[i][j].value);
+            color_scores[i] += color_value(players[i][j].color);
+        }
+    }
+
+    int max_score = result[0];
+    int winner = 0;
+    int tie = 0;
+    for (int i = 1; i < NUM_PLAYERS; i++) {
+        if (result[i] > max_score) {
+            max_score = result[i];
+            winner = i;
+            tie = 0;
+        } else if (result[i] == max_score) {
+            tie = 1;
+        }
+    }
+
+    if (tie) {
+        int max_color_score = color_scores[winner];
+        for (int i = 0; i < NUM_PLAYERS; i++) {
+            if (result[i] == max_score && color_scores[i] > max_color_score) {
+                winner = i;
+                max_color_score = color_scores[i];
+            }
+        }
+    }
+
     return winner;
 }
 
-int check_value(int value){
-    if(value >= 1 && value <= 9) return (value + '0');
-    else if(value == 10) return 'J';
-    else if(value == 12) return 'Q';
-    else if(value == 15) return 'K';
-    else if(value == 20) return 'A';
-
+void sort_cards(struct Card cards[PLAYERS_ARRAY_SIZE], int turns) {
+    for (int i = 0; i < turns; i++) {
+        for (int j = i + 1; j < turns; j++) {
+            if (card_value(cards[i].value) < card_value(cards[j].value) ||
+                (card_value(cards[i].value) == card_value(cards[j].value) &&
+                 color_value(cards[i].color) < color_value(cards[j].color))) {
+                struct Card tmp = cards[i];
+                cards[i] = cards[j];
+                cards[j] = tmp;
+            }
+        }
+    }
 }
 
-void print_winners_array(int winner, struct Card players[NUM_PLAYERS][PLAYERS_ARRAY_SIZE]) {
-    int flag = 0;
-    for(int i = 1; i < winner + 1; i++){
-        if (winner == i) {
-            flag = 1;
-            printf("Player %d wins: ", winner);
-            for (int i = 0; i < PLAYERS_ARRAY_SIZE; i++) {
-                players[winner][i].value = check_value(players[winner][i].value);
-                printf("(%c) (%c); ", players[winner][i].value, players[winner][i].color);
-            }
-            printf("\n");
-        } 
-        if(flag == 1) break;
+void print_winners_array(int winner_index, struct Card cards[PLAYERS_ARRAY_SIZE], int turns) {
+    printf("Player %d wins: ", winner_index + 1);
+    sort_cards(cards, turns);
+    for (int i = 0; i < turns; i++) {
+        printf("(%c %c); ", cards[i].value, cards[i].color);
     }
+    printf("\n");
 }
 
 int main() {
     struct Card players[NUM_PLAYERS][PLAYERS_ARRAY_SIZE] = {0};
-    int winner = game("teste.txt", players);
+    int player_card_count[NUM_PLAYERS] = {0};
+    int winner_index = game("teste.txt", players, player_card_count);
     
-    print_winners_array(winner, players);
+    print_winners_array(winner_index, players[winner_index], player_card_count[winner_index]);
+    
     return 0;
 }

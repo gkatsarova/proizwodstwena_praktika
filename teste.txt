@@ -1,1 +1,1 @@
-A C 9 D 9 H 1 C 2 H 2 S A H	6 H 4 S A S 5 C K C 6 S K H	5 H K S Q C 3 D Q D	Q H Q S 9 C 8 S 7 D 9 S	8 C A D 8 D 8 H 7 C 7 S 6 C	6 D 5 D 5 S 4 C 3 C 3 H 3 S 2 C 4 D	7 H 2 D 1 D K D 1 H 1 S	J C J D J H J S 4 H
+1 C 2 C 3 C 4 C 1 D 2 D 3 D 6 D 1 H 2 H 3 H Q C 1 S 2 S 3 S A S
